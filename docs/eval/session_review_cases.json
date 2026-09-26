@@ -1,0 +1,503 @@
+{
+  "schema_version": 1,
+  "description": "Labeled evaluation cases for the AI-assisted session review feature (docs/BUILD_PLAN.md, 'Planned AI feature'). Each case is a completed Session record paired with the signals a correct structured review draft must surface. See docs/eval/README.md for how to score against these.",
+  "cases": [
+    {
+      "id": "case-01-strong-slice",
+      "category": "happy-path",
+      "session": {
+        "goal": "Build a calculator",
+        "project_path": "calculator",
+        "constraints": "Use Python standard library only",
+        "acceptance_criteria": "All tests pass",
+        "status": "completed",
+        "evidence": "python -m pytest: 14 passed",
+        "explanation_checkpoint": "I understand the model, storage, CLI, and completion gate.",
+        "next_action": "Write the first test"
+      },
+      "expected_signals": {
+        "strengths": [
+          "acceptance criteria (all tests pass) is directly supported by the evidence (14 passed, 0 failed)",
+          "constraint (stdlib only) is not contradicted by anything in evidence or explanation"
+        ],
+        "risks": [
+          "explanation checkpoint names the components touched but does not describe any specific tradeoff or design decision, so depth of understanding is only partially demonstrated",
+          "next_action ('Write the first test') reads as though testing has not started yet, which is inconsistent with evidence showing 14 tests already passing"
+        ],
+        "follow_ups": [
+          "ask the learner to explain one specific tradeoff (e.g. why stdlib-only, what it ruled out)",
+          "clarify or correct next_action so it reflects the actual next step post-completion"
+        ],
+        "confidence": "medium",
+        "confidence_rationale": "Evidence directly supports acceptance criteria, but the next_action/evidence inconsistency and shallow explanation prevent high confidence.",
+        "required_citations": ["evidence", "acceptance_criteria", "explanation_checkpoint", "next_action"]
+      },
+      "notes": "Real record from sessions/demo.json. Baseline case: evidence supports the criteria, but two real inconsistencies (shallow explanation, stale next_action) should not be missed just because the surface result looks clean."
+    },
+    {
+      "id": "case-02-generic-crud",
+      "category": "vague-evidence",
+      "session": {
+        "goal": "Build a CRUD application",
+        "project_path": "crud",
+        "constraints": "Full stack",
+        "acceptance_criteria": "Able to POST and GET values",
+        "status": "completed",
+        "evidence": "POST and GET is working",
+        "explanation_checkpoint": "Testing POST and GET is working as expected.",
+        "next_action": "Plan the stack"
+      },
+      "expected_signals": {
+        "strengths": [
+          "evidence topic (POST and GET) matches acceptance criteria topic"
+        ],
+        "risks": [
+          "evidence is an unverified claim, not proof: no test output, request/response example, or tool used to confirm 'is working'",
+          "explanation checkpoint restates the evidence/goal rather than demonstrating understanding of how or why it works",
+          "constraints ('Full stack') is far broader than what evidence covers (only POST/GET), and nothing (DB, UI, auth) is addressed",
+          "next_action ('Plan the stack') suggests the stack wasn't chosen yet, contradicting a full-stack CRUD app being marked completed"
+        ],
+        "follow_ups": [
+          "request concrete evidence: command run, output, or a request/response transcript",
+          "ask what 'full stack' currently covers vs. still needs (data layer, UI, auth)",
+          "reconcile next_action with completed status"
+        ],
+        "confidence": "low",
+        "confidence_rationale": "Evidence and explanation are both unverifiable claims rather than demonstrated proof, and scope (full stack) is not covered by what was described.",
+        "required_citations": ["evidence", "constraints", "acceptance_criteria", "next_action"]
+      },
+      "notes": "Real record from sessions/practice.json. Tests whether the review catches 'evidence' that is just an assertion, and a constraints/evidence scope mismatch."
+    },
+    {
+      "id": "case-03-constraint-violation",
+      "category": "constraint-violation",
+      "session": {
+        "goal": "Fetch and display weather data",
+        "project_path": "weather-cli",
+        "constraints": "Use Python standard library only, no third-party packages",
+        "acceptance_criteria": "CLI prints current temperature for a given city",
+        "status": "completed",
+        "evidence": "Ran `python -m weather_cli --city Honolulu`; used the `requests` library to call the weather API; printed '84F'.",
+        "explanation_checkpoint": "requests made the HTTP call simple, so I used it instead of urllib.",
+        "next_action": "Add error handling for invalid city names"
+      },
+      "expected_signals": {
+        "strengths": [
+          "acceptance criteria (prints current temperature) is directly demonstrated by the evidence output"
+        ],
+        "risks": [
+          "constraint violation: evidence and explanation both state `requests` (a third-party package) was used, directly contradicting the stdlib-only constraint"
+        ],
+        "follow_ups": [
+          "flag the constraint violation explicitly and ask whether to rewrite with urllib or update the constraint",
+          "do not mark this a clean pass despite acceptance criteria being met, since a constraint was broken"
+        ],
+        "confidence": "high",
+        "confidence_rationale": "The violation is explicit and unambiguous in the learner's own explanation, not inferred.",
+        "required_citations": ["constraints", "evidence", "explanation_checkpoint"]
+      },
+      "notes": "Tests whether the review prioritizes an explicit constraint violation over surface-level acceptance-criteria success. This is the most important failure mode to catch reliably."
+    },
+    {
+      "id": "case-04-missing-next-action",
+      "category": "edge-case-empty-field",
+      "session": {
+        "goal": "Add a logout button to the settings page",
+        "project_path": "webapp/settings",
+        "constraints": "Match existing button styling",
+        "acceptance_criteria": "Clicking logout clears the session and redirects to /login",
+        "status": "completed",
+        "evidence": "Manual test: clicked logout, session cookie cleared, redirected to /login as expected.",
+        "explanation_checkpoint": "The button calls the existing logout() handler already used elsewhere, then does a client-side redirect.",
+        "next_action": ""
+      },
+      "expected_signals": {
+        "strengths": [
+          "evidence directly demonstrates the acceptance criteria via a concrete manual test",
+          "explanation shows understanding of reuse (existing logout() handler) rather than a black-box claim"
+        ],
+        "risks": [
+          "evidence is manual only, no automated test — acceptable for a one-off UI change but worth naming as a gap",
+          "next_action is empty, which is valid per the schema but means there is no recorded follow-up even though this is a small, easily regression-tested change"
+        ],
+        "follow_ups": [
+          "suggest an automated test (e.g. a UI or integration test for the logout flow) as a low-cost next_action",
+          "do not treat the empty next_action as an error — the schema allows it — but note the missed opportunity"
+        ],
+        "confidence": "medium",
+        "confidence_rationale": "Evidence is credible and specific, but manual-only testing plus no recorded next step slightly limits confidence.",
+        "required_citations": ["evidence", "next_action", "explanation_checkpoint"]
+      },
+      "notes": "Tests handling of a schema-valid but empty next_action field — the review should not fabricate a violation, but should still note the gap."
+    },
+    {
+      "id": "case-05-security-omission",
+      "category": "security-risk",
+      "session": {
+        "goal": "Add a password reset endpoint",
+        "project_path": "api/auth",
+        "constraints": "Reuse the existing email-sending service",
+        "acceptance_criteria": "POST /reset-password sends a reset link and updates the password on confirmation",
+        "status": "completed",
+        "evidence": "curl POST /reset-password returns 200 and an email is received with a working reset link; confirmed password updates after clicking the link.",
+        "explanation_checkpoint": "The endpoint generates a token, emails a link containing it, and the confirm endpoint checks the token before allowing the update.",
+        "next_action": "Deploy to staging"
+      },
+      "expected_signals": {
+        "strengths": [
+          "acceptance criteria is demonstrated end-to-end with a concrete manual trace (request, email, confirmation)"
+        ],
+        "risks": [
+          "no mention of token expiry, single-use enforcement, or rate limiting on the reset endpoint — all standard requirements for password-reset flows and a plausible security gap the evidence/explanation is silent on",
+          "no automated test evidence, only a manual curl trace, for a security-sensitive endpoint"
+        ],
+        "follow_ups": [
+          "ask explicitly whether the reset token expires and is single-use before deploying to staging",
+          "recommend automated tests for the security-relevant edge cases (expired token, reused token, wrong token) before next_action proceeds"
+        ],
+        "confidence": "low",
+        "confidence_rationale": "Functional path is shown, but the review cannot confirm safety-critical properties (expiry, single-use) that are neither confirmed nor denied by the record.",
+        "required_citations": ["goal", "evidence", "explanation_checkpoint", "next_action"]
+      },
+      "notes": "Tests whether the review flags an absent security property rather than only checking what's explicitly stated. This is a 'silence is a risk' case, harder than an explicit contradiction."
+    },
+    {
+      "id": "case-06-explanation-copy-paste",
+      "category": "shallow-explanation",
+      "session": {
+        "goal": "Refactor the pricing calculator to support discount codes",
+        "project_path": "pricing",
+        "constraints": "No changes to the public calculate_price() signature",
+        "acceptance_criteria": "calculate_price() applies a discount code when valid and ignores invalid ones",
+        "status": "completed",
+        "evidence": "python -m pytest tests/test_pricing.py: 9 passed",
+        "explanation_checkpoint": "I refactored the pricing calculator to support discount codes.",
+        "next_action": "Add support for percentage-based discounts"
+      },
+      "expected_signals": {
+        "strengths": [
+          "test evidence (9 passed) is concrete and scoped to the relevant test file"
+        ],
+        "risks": [
+          "explanation checkpoint is a restatement of the goal, not an explanation — it gives no indication the learner understands how discount validation works or how the signature constraint was preserved",
+          "no evidence that the public signature constraint was actually respected (no diff, no mention of it)"
+        ],
+        "follow_ups": [
+          "ask the learner to explain specifically how invalid codes are detected and how the signature was kept unchanged",
+          "this should not be treated as passing the explanation-checkpoint intent even though the field is non-empty"
+        ],
+        "confidence": "medium",
+        "confidence_rationale": "Test evidence is solid, but the explanation checkpoint fails its purpose (demonstrating understanding), which the review must catch even though the field is technically filled in.",
+        "required_citations": ["explanation_checkpoint", "constraints", "evidence"]
+      },
+      "notes": "Tests whether the review distinguishes 'field is non-empty' (passes the Session.complete() gate) from 'field actually satisfies its purpose' — the completion gate is a floor, not a quality check, and the review must apply real judgment on top of it."
+    },
+    {
+      "id": "case-07-scope-creep",
+      "category": "scope-mismatch",
+      "session": {
+        "goal": "Fix the off-by-one error in the pagination component",
+        "project_path": "webapp/pagination",
+        "constraints": "Minimal, targeted fix",
+        "acceptance_criteria": "Page 1 shows items 1-10, not 0-9",
+        "status": "completed",
+        "evidence": "python -m pytest tests/test_pagination.py: 22 passed. Also rewrote the pagination component to use a new library and updated 6 other components that depended on it.",
+        "explanation_checkpoint": "Fixed the off-by-one bug and while I was in there, modernized the whole pagination system since it looked outdated.",
+        "next_action": "Update documentation for the new pagination API"
+      },
+      "expected_signals": {
+        "strengths": [
+          "test evidence for the specific off-by-one fix appears present (22 tests passed)"
+        ],
+        "risks": [
+          "constraint says 'minimal, targeted fix' but evidence and explanation both describe a full rewrite touching 6 other components — a direct constraint violation via scope creep",
+          "wider blast radius (6 dependent components) increases regression risk without evidence those components were individually verified"
+        ],
+        "follow_ups": [
+          "flag the scope-creep as a constraint violation regardless of whether tests pass",
+          "ask for evidence that each of the 6 dependent components was tested, not just the pagination component itself"
+        ],
+        "confidence": "high",
+        "confidence_rationale": "The constraint violation is explicit and self-reported in the explanation checkpoint.",
+        "required_citations": ["constraints", "evidence", "explanation_checkpoint"]
+      },
+      "notes": "A second constraint-violation flavor distinct from case-03: this one is about scope discipline rather than a technology/library restriction. Tests that the review doesn't reward extra unrequested work as a strength."
+    },
+    {
+      "id": "case-08-criteria-not-met",
+      "category": "criteria-mismatch",
+      "session": {
+        "goal": "Add input validation to the signup form",
+        "project_path": "webapp/signup",
+        "constraints": "Client-side only for now, server-side validation is a separate ticket",
+        "acceptance_criteria": "Empty email, invalid email format, and short passwords are all rejected with an inline error",
+        "status": "completed",
+        "evidence": "Manually tested empty email and invalid email format, both show inline errors correctly.",
+        "explanation_checkpoint": "Added regex-based email validation and a required-field check; ran out of time to test the password length case but the code path looks the same as the email checks.",
+        "next_action": "Test the password length validation"
+      },
+      "expected_signals": {
+        "strengths": [
+          "two of the three acceptance-criteria conditions (empty email, invalid format) are directly demonstrated",
+          "explanation checkpoint is honest and specific about what was and wasn't verified"
+        ],
+        "risks": [
+          "acceptance criteria requires three conditions; only two are evidenced. The third (short passwords) is explicitly unverified, so the session should not be treated as fully meeting its acceptance criteria",
+          "'looks the same as the email checks' is an assumption, not evidence"
+        ],
+        "follow_ups": [
+          "do not report acceptance criteria as fully met; state clearly that 1 of 3 conditions is unverified",
+          "next_action already correctly targets the gap — reinforce that this must happen before considering the feature done, not just as a nice-to-have"
+        ],
+        "confidence": "medium",
+        "confidence_rationale": "Honest, specific partial evidence lets the review pinpoint the exact gap with confidence, even though the feature overall is incomplete relative to its stated criteria.",
+        "required_citations": ["acceptance_criteria", "evidence", "explanation_checkpoint", "next_action"]
+      },
+      "notes": "Tests whether the review correctly scores partial acceptance-criteria coverage rather than treating 'evidence exists' as 'criteria met'. Also rewards an honest gap disclosure rather than penalizing it as harshly as a hidden one."
+    },
+    {
+      "id": "case-09-contradictory-evidence",
+      "category": "internal-contradiction",
+      "session": {
+        "goal": "Migrate the database schema for the orders table",
+        "project_path": "db/migrations",
+        "constraints": "Must be a reversible migration",
+        "acceptance_criteria": "Migration applies cleanly and all existing order records remain queryable afterward",
+        "status": "completed",
+        "evidence": "Ran migration up: 3 tests failed (order_total precision), 12 passed. Ran migration down successfully.",
+        "explanation_checkpoint": "The migration changes the order_total column type and is reversible, confirmed by running it down successfully.",
+        "next_action": "Fix the precision issue in order_total"
+      },
+      "expected_signals": {
+        "strengths": [
+          "the down-migration (reversibility constraint) is demonstrated and passes",
+          "explanation and next_action are consistent with the evidence about the precision issue"
+        ],
+        "risks": [
+          "acceptance criteria requires the migration to 'apply cleanly', but evidence shows 3 failing tests on the up-migration — the record is marked completed despite the primary acceptance criterion not being met",
+          "this is the clearest case where evidence text is present (satisfying the completion gate) but does not actually support the acceptance criteria"
+        ],
+        "follow_ups": [
+          "explicitly state that this session should not be considered to have met its acceptance criteria, despite passing Session.complete()'s non-empty-field check",
+          "the next_action correctly targets the real gap, so validate rather than duplicate it"
+        ],
+        "confidence": "high",
+        "confidence_rationale": "The contradiction (3 failing tests vs. 'applies cleanly' criteria) is stated plainly in the evidence field itself.",
+        "required_citations": ["acceptance_criteria", "evidence", "next_action"]
+      },
+      "notes": "The sharpest illustration of why Session.complete()'s non-empty-string gate is not a correctness gate: this record is schema-valid and 'completed' while its own evidence field documents test failures against the stated acceptance criteria."
+    },
+    {
+      "id": "case-10-ambiguous-criteria",
+      "category": "ambiguous-acceptance-criteria",
+      "session": {
+        "goal": "Improve the search results page",
+        "project_path": "webapp/search",
+        "constraints": "No backend changes",
+        "acceptance_criteria": "Search results look better and load faster",
+        "status": "completed",
+        "evidence": "Changed results to a card layout and added lazy image loading; page feels snappier when scrolling.",
+        "explanation_checkpoint": "Card layout is more modern and lazy loading avoids loading all images upfront.",
+        "next_action": "Get design feedback on the new layout"
+      },
+      "expected_signals": {
+        "strengths": [
+          "the two named changes (card layout, lazy loading) plausibly map to the two vague criteria (looks better, loads faster)"
+        ],
+        "risks": [
+          "acceptance criteria itself is unmeasurable as written ('looks better', 'faster' with no baseline or metric), which is a criteria-quality problem the review should name, not just a session-evidence problem",
+          "'feels snappier' is a subjective impression, not a measurement (no load-time numbers, no before/after)"
+        ],
+        "follow_ups": [
+          "recommend the acceptance criteria be rewritten with a measurable bar (e.g. a specific load-time target or a defined design spec) for future sessions on this goal",
+          "suggest capturing an actual load-time measurement before/after as evidence, not just a subjective impression"
+        ],
+        "confidence": "low",
+        "confidence_rationale": "Vague acceptance criteria makes it impossible to confidently judge whether the criteria was met at all, independent of evidence quality.",
+        "required_citations": ["acceptance_criteria", "evidence"]
+      },
+      "notes": "Tests whether the review can diagnose a problem with the input itself (unmeasurable acceptance criteria) rather than only ever critiquing the evidence against a criteria bar it assumes is well-formed."
+    },
+    {
+      "id": "case-11-next-action-already-done",
+      "category": "internal-contradiction",
+      "session": {
+        "goal": "Add rate limiting to the public API",
+        "project_path": "api/middleware",
+        "constraints": "Use the existing Redis instance for counters",
+        "acceptance_criteria": "Requests beyond 100/min per API key return 429",
+        "status": "completed",
+        "evidence": "Load-tested with 150 requests/min from one key; first 100 succeeded, remaining 50 returned 429 as expected.",
+        "explanation_checkpoint": "Rate limiting uses a sliding window counter in Redis keyed by API key.",
+        "next_action": "Write a load test to confirm the 429 behavior at the 100/min threshold"
+      },
+      "expected_signals": {
+        "strengths": [
+          "evidence directly and quantitatively demonstrates the acceptance criteria (429 after 100/min)",
+          "explanation shows a specific implementation detail (sliding window, Redis-keyed) rather than a generic claim"
+        ],
+        "risks": [
+          "next_action asks to write a load test to confirm 429 behavior, but the evidence shows that load test was already performed and passed — the next_action is stale/redundant"
+        ],
+        "follow_ups": [
+          "flag that next_action appears to duplicate work already completed per the evidence field, and should be corrected or replaced with a genuinely new next step"
+        ],
+        "confidence": "high",
+        "confidence_rationale": "Both the acceptance-criteria match and the next_action redundancy are unambiguous from the record's own text.",
+        "required_citations": ["evidence", "next_action", "acceptance_criteria"]
+      },
+      "notes": "Otherwise a strong record — tests whether the review still catches a smaller-stakes inconsistency (stale next_action) even when the core evidence/criteria match is clean, rather than stopping analysis once the main criterion looks satisfied."
+    },
+    {
+      "id": "case-12-minimal-count-only",
+      "category": "vague-evidence",
+      "session": {
+        "goal": "Add unit tests for the tax calculation module",
+        "project_path": "billing/tax",
+        "constraints": "Cover at least the edge cases listed in the ticket (zero income, negative income, multiple brackets)",
+        "acceptance_criteria": "All three named edge cases have a passing test",
+        "status": "completed",
+        "evidence": "pytest: 7 passed",
+        "explanation_checkpoint": "Added tests for the tax module.",
+        "next_action": "Review test coverage report"
+      },
+      "expected_signals": {
+        "strengths": [
+          "a test run with a pass count is at least real, executable evidence, unlike a purely verbal claim"
+        ],
+        "risks": [
+          "evidence gives a pass count (7) but no way to confirm the three specifically named edge cases (zero income, negative income, multiple brackets) are actually among them",
+          "explanation checkpoint is generic and does not name which edge cases were covered, so it cannot corroborate the evidence either"
+        ],
+        "follow_ups": [
+          "ask for the specific test names or a coverage report to confirm the three named edge cases are covered, since a pass count alone does not prove it",
+          "next_action (review coverage report) is a reasonable way to close this gap — validate it rather than treating this session as already fully verified"
+        ],
+        "confidence": "low",
+        "confidence_rationale": "The acceptance criteria names specific required cases, and neither evidence nor explanation confirms those specific cases were tested, only that some tests exist and pass.",
+        "required_citations": ["acceptance_criteria", "constraints", "evidence", "explanation_checkpoint"]
+      },
+      "notes": "A distinct flavor of vague evidence from case-02/case-06: here the evidence is real (an actual test run) but too coarse-grained to verify the specific, named acceptance criteria."
+    },
+    {
+      "id": "case-13-large-refactor-thin-evidence",
+      "category": "vague-evidence",
+      "session": {
+        "goal": "Refactor the entire order-processing pipeline to use async I/O",
+        "project_path": "orders/pipeline",
+        "constraints": "No change to the public OrderProcessor API; must remain backward compatible",
+        "acceptance_criteria": "All existing integration tests pass and average processing latency drops by at least 30%",
+        "status": "completed",
+        "evidence": "Refactored to async, tests pass.",
+        "explanation_checkpoint": "Converted the pipeline to use asyncio for I/O-bound steps.",
+        "next_action": "Measure latency improvement in staging"
+      },
+      "expected_signals": {
+        "strengths": [
+          "'tests pass' at least claims the compatibility half of the acceptance criteria was checked"
+        ],
+        "risks": [
+          "for a change of this size (entire pipeline refactor), 'tests pass' is far too thin — no test count, no indication which suite, no confirmation the public API was actually left unchanged",
+          "acceptance criteria has two parts (tests pass AND latency drops 30%); only the first is even claimed, and the second is explicitly deferred to next_action — this session should not be treated as having met its acceptance criteria yet"
+        ],
+        "follow_ups": [
+          "state plainly that only half of a two-part acceptance criteria has any evidence at all, and the 30% latency target is entirely unverified",
+          "given the size of the change (entire pipeline), ask for a specific test count and confirmation of API backward-compatibility, not just 'tests pass'"
+        ],
+        "confidence": "low",
+        "confidence_rationale": "The evidence-to-change-size ratio is very poor, and one of two explicit acceptance-criteria components is unaddressed.",
+        "required_citations": ["acceptance_criteria", "constraints", "evidence", "next_action"]
+      },
+      "notes": "Tests whether the review calibrates evidence sufficiency to the size/risk of the change, not just to whether the evidence field is non-empty and vaguely positive."
+    },
+    {
+      "id": "case-14-good-explanation-thin-tests",
+      "category": "mixed-signal",
+      "session": {
+        "goal": "Add a retry mechanism for flaky external API calls",
+        "project_path": "integrations/retry",
+        "constraints": "Exponential backoff, max 3 retries, must not retry on 4xx responses",
+        "acceptance_criteria": "5xx and network errors are retried up to 3 times with exponential backoff; 4xx errors are not retried",
+        "status": "completed",
+        "evidence": "pytest: 4 passed",
+        "explanation_checkpoint": "I wrote a decorator that catches ConnectionError and 5xx responses, retries with backoff of 1s/2s/4s up to 3 times, and re-raises immediately on any 4xx since those are treated as non-retryable client errors per the ticket.",
+        "next_action": "Apply the decorator to the two other integrations that need it"
+      },
+      "expected_signals": {
+        "strengths": [
+          "explanation checkpoint is detailed and precisely matches every clause of the constraints and acceptance criteria (backoff schedule, retry cap, 4xx exclusion)",
+          "next_action is a sensible, concrete follow-up"
+        ],
+        "risks": [
+          "only 4 tests for a feature with several distinct required behaviors (5xx retried, network-error retried, 4xx not retried, backoff timing, retry cap) — plausible but not confirmed that each behavior has its own test versus a few tests covering only some paths",
+          "evidence gives no detail on what the 4 tests actually assert"
+        ],
+        "follow_ups": [
+          "ask for the test names or a brief description of what each of the 4 tests covers, to confirm the 4xx non-retry behavior specifically has a test (it's the easiest behavior to accidentally leave unverified)"
+        ],
+        "confidence": "medium",
+        "confidence_rationale": "The explanation is strong enough to raise confidence despite thin evidence, but a low test count relative to the number of distinct required behaviors keeps this from being high confidence.",
+        "required_citations": ["explanation_checkpoint", "constraints", "evidence", "acceptance_criteria"]
+      },
+      "notes": "Tests whether the review can hold two different signals in tension (strong explanation vs. thin test evidence) rather than anchoring on just one field. Also the intended positive-control case for the 'confidence' field: it should land in the middle, not at an extreme."
+    },
+    {
+      "id": "case-15-empty-constraints-project",
+      "category": "edge-case-minimal-fields",
+      "session": {
+        "goal": "Write a script to rename files in a folder by prefix",
+        "project_path": "scripts/rename",
+        "constraints": "",
+        "acceptance_criteria": "Running the script renames all .txt files in the target folder with the given prefix",
+        "status": "completed",
+        "evidence": "Ran on a test folder with 3 .txt files and 1 .csv file; all 3 .txt files were renamed with the prefix, the .csv file was untouched.",
+        "explanation_checkpoint": "The script filters files by extension before renaming, so non-.txt files are skipped.",
+        "next_action": "Add a --dry-run flag before using this on real folders"
+      },
+      "expected_signals": {
+        "strengths": [
+          "evidence is specific and directly tests the exact scenario in the acceptance criteria, including the negative case (.csv file untouched)",
+          "explanation correctly identifies the mechanism (extension filter) responsible for the observed behavior",
+          "next_action (dry-run flag) shows good judgment about the risk of an irreversible file-renaming operation, even though nothing in the goal/constraints asked for it"
+        ],
+        "risks": [
+          "constraints field is empty, so there is nothing to check the evidence against beyond the acceptance criteria itself — this is schema-valid but worth noting as a thin input, not a flaw in the work performed"
+        ],
+        "follow_ups": [
+          "none required for correctness; optionally suggest recording a constraint for scripts that mutate the filesystem (e.g. 'must support dry-run') going forward"
+        ],
+        "confidence": "high",
+        "confidence_rationale": "Evidence, explanation, and even an unrequested safety consideration (dry-run) are all mutually consistent and well-scoped to a small, well-tested change.",
+        "required_citations": ["evidence", "explanation_checkpoint", "constraints", "next_action"]
+      },
+      "notes": "The other clean positive case (alongside case-01), but with an empty optional-in-practice field (constraints) to make sure the review doesn't manufacture a risk out of an empty field when the rest of the record is genuinely solid."
+    },
+    {
+      "id": "case-16-status-active-not-completed",
+      "category": "edge-case-non-completed-status",
+      "session": {
+        "goal": "Add dark mode support to the dashboard",
+        "project_path": "webapp/dashboard",
+        "constraints": "Use CSS variables, no new dependencies",
+        "acceptance_criteria": "Toggling dark mode updates all dashboard components without a page reload",
+        "status": "active",
+        "evidence": "Converted the header and sidebar to use CSS variables; toggle works for those two components.",
+        "explanation_checkpoint": "",
+        "next_action": "Convert the remaining chart and table components to use CSS variables"
+      },
+      "expected_signals": {
+        "strengths": [],
+        "risks": [
+          "status is 'active', not 'completed' — this record should not be run through the completed-session review flow at all"
+        ],
+        "follow_ups": [
+          "the feature should reject or defer this input rather than generate a review draft for an in-progress session"
+        ],
+        "confidence": "n/a",
+        "confidence_rationale": "Not applicable: this case tests input validation/routing (reject non-completed sessions), not review quality.",
+        "required_citations": []
+      },
+      "notes": "Precondition/guard-rail case, not a review-quality case: the review-generation code path should only ever run on status == 'completed' sessions (this is also schema-consistent with Session.complete()'s explanation_checkpoint requirement being unmet here). Use this to test the feature's input guard, separate from the SDK-response failure-mode tests (valid/malformed/refused/timed-out) already planned in docs/TASKS.md."
+    }
+  ]
+}

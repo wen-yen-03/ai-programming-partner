@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+sessions/*.json
+!sessions/.gitkeep
+.env
+.venv/
+node_modules/
+data/audit/
+data/chunks/
+.env.*
+!.env.example
+src/practice/

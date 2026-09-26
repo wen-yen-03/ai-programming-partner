@@ -1,0 +1,12 @@
+from fastapi import FastAPI
+
+
+app = FastAPI()
+
+@app.post("/session")
+def create_session():
+    return {"message": "Session completed successfully."}
+
+@app.get("/session")
+def get_session():
+    return {"message": "Session created successfully."}
